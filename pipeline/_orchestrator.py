@@ -1049,6 +1049,12 @@ def run_sensitivities(
             args.check_only,
         )
         batch_dirs["sensitivity_reaction"] = reaction_dir
+        if not args.check_only:
+            # EAI reads this fraction and pairs reaction ctx with the bsl
+            # solved at the same cooperative tradeoff.
+            (reaction_dir / "00_solve_tradeoff.txt").write_text(
+                f"{float(args.solve_tradeoff):g}\n"
+            )
         if (
             reaction_complete(
                 reaction_dir,

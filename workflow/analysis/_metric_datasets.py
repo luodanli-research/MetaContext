@@ -219,16 +219,55 @@ def _one_flux(directory: Path, sample: str, simulation_type: str) -> Path | None
     return matches[0]
 
 
-def _reaction_shared_bsl(dataset_path: Path, sample: str) -> Path | None:
-    """Resolve the shared formal bsl used by reaction sensitivity members.
+def _reaction_tradeoff_bsl(dataset_path: Path, sample: str) -> Path | None:
+    """Return the bsl flux solved at the reaction run's cooperative tradeoff.
 
-    Prefer the exact formal name ``<sample>-bsl-flux.csv``. Search order matches
-    current public layout then legacy flat simulation roots:
+    Reaction ctx is solved at ``--tradeoff``. EAI must use a baseline solved
+    at that same fraction. ``00_solve_tradeoff.txt`` records the fraction.
+    Fraction 1 keeps the formal context baseline. Any other fraction uses
+    ``sensitivity_tradeoff/tradeoff<fraction>/<sample>-tradeoff<fraction>-bsl-flux.csv``.
+    """
+
+    marker = dataset_path / "00_solve_tradeoff.txt"
+    if not marker.is_file():
+        return None
+    try:
+        fraction = float(marker.read_text().strip().split()[0])
+    except (OSError, ValueError):
+        return None
+    if not np.isfinite(fraction) or np.isclose(fraction, 1.0):
+        return None
+    tag = f"tradeoff{fraction:g}"
+    candidate = (
+        dataset_path.parent
+        / "sensitivity_tradeoff"
+        / tag
+        / f"{sample}-{tag}-bsl-flux.csv"
+    )
+    if not candidate.is_file():
+        raise FileNotFoundError(
+            f"Reaction ctx for {sample} was solved at tradeoff {fraction:g}, "
+            "but the matching baseline flux is missing: "
+            f"{candidate}"
+        )
+    return candidate.resolve()
+
+
+def _reaction_shared_bsl(dataset_path: Path, sample: str) -> Path | None:
+    """Resolve the shared bsl used by reaction sensitivity members.
+
+    Prefer a baseline solved at the same cooperative tradeoff as the reaction
+    ctx fluxes. Otherwise use the formal ``<sample>-bsl-flux.csv``. Search
+    order for that formal file matches the public layout, then legacy roots:
 
     1. ``<simulation-root>/context/`` (GE formal)
     2. ``<simulation-root>/ga/`` (GA formal, if present)
     3. ``<simulation-root>/`` itself (legacy)
     """
+
+    matched = _reaction_tradeoff_bsl(dataset_path, sample)
+    if matched is not None:
+        return matched
 
     parent = dataset_path.parent
     search_dirs = (

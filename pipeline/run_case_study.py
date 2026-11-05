@@ -6,6 +6,8 @@ reuse the pre-solve context models. Medium fluxes are the phosphate-and-iron
 list and are plotted from the existing directory; this script does not solve
 medium again. Tradeoff sensitivity and reaction reuse files already in the
 selected tree. ``tradeoff0.5`` links its tradeoff sweep to ``tradeoff1``.
+Medium and reaction solves use ``--solve-tradeoff``. Reaction EAI pairs each
+ctx flux with the baseline solved at that same fraction.
 
 Examples::
 

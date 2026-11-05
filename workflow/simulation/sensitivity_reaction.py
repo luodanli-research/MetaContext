@@ -1058,6 +1058,9 @@ def run(args: argparse.Namespace) -> None:
     tradeoff = float(args.tradeoff)
     if not np.isfinite(tradeoff) or not 0 < tradeoff <= 1:
         raise ValueError("--tradeoff must be in (0, 1].")
+    # EAI pairs each reaction ctx flux with a bsl flux at this same fraction.
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "00_solve_tradeoff.txt").write_text(f"{tradeoff:g}\n")
     if args.stage in {"generate", "all"} and args.reaction_list is None:
         raise ValueError("--reaction-list is required for LHS generation.")
     perturb_fraction = float(args.fraction) / 100.0
