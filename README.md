@@ -46,7 +46,7 @@ Each file should contain one GEM for one MAG in SBML format.
 
 `01_taxon_ge.csv`: housekeeping-gene-based RNA abundance (TPM), used for taxon scaling in baseline and context CMMs.
 
-`01_taxon_ga.csv`: housekeeping-gene-based DNA abundance (TPM), used only for DNA–RNA concordance quality control.
+`01_taxon_ga.csv`: housekeeping-gene-based DNA abundance (TPM), used only for DNA–RNA concordance quality control (QC).
 
 **Gene expression:**
 
@@ -79,21 +79,21 @@ Output layout (under `{example|case_study}/outputs/`; shared by both launchers):
 
 | Stage | Item | Notes |
 |---|---|---|
-| `01_baseline/` | `<sample>-bsl.pickle` | baseline community model |
-| `01_baseline/` | `<sample>-manifest.tsv` | taxon manifest |
-| `02_context/` | `context_bounds.csv` | RIPTiDe reaction bounds |
-| `02_context/` | `context_species.csv` | QC eligibility table |
-| `02_context/` | `context_expression.csv` | QC-filtered expression |
+| `01_baseline/` | `<sample>-bsl.pickle` | Baseline CMM |
+| `01_baseline/` | `<sample>-manifest.tsv` | Taxon manifest |
+| `02_context/` | `context_bounds.csv` | Reaction bounds |
+| `02_context/` | `context_species.csv` | QC eligibility taxa |
+| `02_context/` | `context_expression.csv` | QC-filtered gene expression data |
 | `02_context/` | `context_summary.csv` | QC funnel summary |
-| `02_context/` | `<sample>-ctx.pickle` | **pre-solve** constrained community (saved before first ctx solve; never overwritten after) |
-| `03_simulation/context/` | `<sample>-{bsl,ctx}-flux.csv` | formal (single) flux dataset |
-| `03_simulation/sensitivity_medium/bound<value>/` | `<sample>-bound<value>-{bsl,ctx}-flux.csv` | one folder per medium bound |
-| `03_simulation/sensitivity_tradeoff/tradeoff<value>/` | `<sample>-tradeoff<value>-{bsl,ctx}-flux.csv` | one folder per tradeoff fraction |
-| `03_simulation/sensitivity_reaction/01_lhs/<sample>/` | `LHS_sample_S*.csv` | generated Latin Hypercube Sampling (LHS) intervals |
-| `03_simulation/sensitivity_reaction/S*/` | `<sample>-reaction-S*-ctx-flux.csv` | one folder per realization |
-| `04_analysis/eai/<dataset>/` | EAI CSVs and radar PDFs | one subfolder per analyzed flux dataset (`context` or a sensitivity batch member) |
-| `04_analysis/arb/<dataset>/` | ARB CSVs and bar PDFs | anabolic/catabolic/detox routing summaries per flux dataset |
-| `04_analysis/ac/<dataset>/` | AC CSVs, networks, and heatmap PDFs | guild interaction scores, networks, and co-consumption heatmaps per flux dataset |
+| `02_context/` | `<sample>-ctx.pickle` | Context CMM |
+| `03_simulation/context/` | `<sample>-{bsl,ctx}-flux.csv` | Formal output flux data |
+| `03_simulation/sensitivity_medium/bound<value>/` | `<sample>-bound<value>-{bsl,ctx}-flux.csv` | One folder per medium bound |
+| `03_simulation/sensitivity_tradeoff/tradeoff<value>/` | `<sample>-tradeoff<value>-{bsl,ctx}-flux.csv` | One folder per tradeoff fraction |
+| `03_simulation/sensitivity_reaction/01_lhs/<sample>/` | `LHS_sample_S*.csv` | Generated Latin Hypercube Sampling (LHS) intervals |
+| `03_simulation/sensitivity_reaction/S*/` | `<sample>-reaction-S*-ctx-flux.csv` | One folder per realization |
+| `04_analysis/eai/` | EAI CSVs and PDFs | EAI raw data and figure outputs |
+| `04_analysis/arb/` | ARB CSVs and PDFs | ARB raw data and figure outputs |
+| `04_analysis/ac/` | AC CSVs and PDFs | AC raw data and figure outputs |
 
 **Case-study pipeline:**
 
@@ -107,7 +107,7 @@ python pipeline/run_case_study.py
 
 **Key options:**
 
-The flags below apply to both `run_example.py` and `run_case_study.py`; only preset defaults differ (samples, sensitivity grids, and AC heatmap guilds). For the full flag set and defaults, run `python pipeline/run_example.py --help` or `python pipeline/run_case_study.py --help`.
+The flags below apply to both `run_example.py` and `run_case_study.py`.
 
 | Option | Role |
 |---|---|
@@ -119,13 +119,9 @@ The flags below apply to both `run_example.py` and `run_case_study.py`; only pre
 | `--medium-bounds` | Medium sensitivity uptake bounds (preset differs by launcher) |
 | `--tradeoffs` | Tradeoff fractions (preset differs by launcher) |
 | `--reaction-realizations` | Latin Hypercube Sampling (LHS) realization count for reaction sensitivity (preset differs by launcher) |
-| `--force` | Rebuild baselines, re-infer bounds, rerun simulations and metrics |
+| `--force` | Rebuild baselines, re-infer bounds, rerun simulations and metrics, completed stages are reused unless `--force` is set |
 | `--check-only` | Validate inputs and print the plan without solving |
-
-Completed stages are reused unless `--force` is set. Formal sample readiness
-(pre-solve ctx pickle + formal fluxes) gates sensitivity and analysis for that
-sample; failed formal stages are recorded and return a non-zero exit when any
-stage failed. Baseline builds refuse to write through a symlinked `01_baseline`.
+| `--help` | Print the full flag set and defaults |
 
 ## Run Individual Modules
 
@@ -133,120 +129,118 @@ Every module is also a standalone CLI under `workflow/`; you can run modules ind
 
 **1. `workflow/simulation/build_community_model.py`**
 
-Build a baseline MICOM community from taxon abundances.
+Build a baseline CMM from taxon scaling data.
 
 | | Item | Notes |
 |---|---|---|
-| In | `01_gems/<mag_id>.xml` | one SBML GEM per MAG |
-| In | `01_taxon_ge.csv` | default abundance source; or `--abundance-file` |
-| In | `--sample` | sample ID |
-| Out | `01_baseline/<sample>-bsl.pickle` | baseline community model |
-| Out | `01_baseline/<sample>-manifest.tsv` | taxon manifest |
+| In | `01_gems/<mag_id>.xml` | GEM per MAG |
+| In | `01_taxon_ge.csv` | Default taxon scaling data|
+| In | `--sample` | Sample ID |
+| Out | `01_baseline/<sample>-bsl.pickle` | Baseline CMM |
+| Out | `01_baseline/<sample>-manifest.tsv` | Taxon manifest |
 
 **2. `workflow/simulation/infer_context_bounds.py`**
 
-Infer sample-specific RIPTiDe reaction bounds from gene expression after discordance and MICOM abundance QC.
+Run DNA–RNA discordance QC and infer sample-specific reaction bounds for qualified taxa.
 
 | | Item | Notes |
 |---|---|---|
-| In | `01_gems/<mag_id>.xml` | one SBML GEM per MAG |
-| In | `02_gene_expression.csv` | long-format expression |
-| In | `01_taxon_ge.csv`, `01_taxon_ga.csv` | discordance QC inputs |
-| In | `--sample` | sample ID |
-| Out | `02_context/context_bounds.csv` | RIPTiDe reaction bounds |
-| Out | `02_context/context_species.csv` | QC eligibility table |
-| Out | `02_context/context_expression.csv` | QC-filtered expression |
+| In | `01_gems/<mag_id>.xml` | GEM per MAG  |
+| In | `02_gene_expression.csv` | Gene expression data |
+| In | `01_taxon_ge.csv`, `01_taxon_ga.csv` | Discordance QC inputs |
+| In | `--sample` | Sample ID |
+| Out | `02_context/context_bounds.csv` | Reaction bounds |
+| Out | `02_context/context_species.csv` | QC eligibility taxa |
+| Out | `02_context/context_expression.csv` | QC-filtered gene expression data |
 | Out | `02_context/context_summary.csv` | QC funnel summary |
 
 **3. `workflow/simulation/simulate_community_model.py`**
 
-Run baseline (`bsl`) and context (`ctx`) cooperative-tradeoff simulations.
-Ctx flow: apply medium + RIPTiDe bounds → **save pre-solve**
-`<sample>-ctx.pickle` → `load_pickle` a fresh instance → solve → save flux only
-(pickle is not overwritten after solving).
+Run simulations using both baseline and context CMMs.
 
 | | Item | Notes |
 |---|---|---|
-| In | `01_baseline/<sample>-bsl.pickle` | baseline community |
-| In | `02_context/context_bounds.csv` | RIPTiDe bounds (prefer a real file in the run root, not a symlink into another tree) |
-| In | `03_medium.csv` | exchange constraints |
-| In | `--sample` | sample ID |
-| Out | `03_simulation/context/<sample>-{bsl,ctx}-flux.csv` | formal flux tables |
-| Out | `02_context/<sample>-ctx.pickle` | pre-solve starting model for all ctx sensitivity loads |
+| In | `01_baseline/<sample>-bsl.pickle` | Baseline CMM |
+| In | `02_context/context_bounds.csv` | Reaction bounds |
+| In | `03_medium.csv` | Exchange constraints |
+| In | `--sample` | Sample ID |
+| Out | `03_simulation/context/<sample>-{bsl,ctx}-flux.csv` | Formal output flux data |
+| Out | `02_context/<sample>-ctx.pickle` | Context CMM |
 
 **4. `workflow/simulation/sensitivity_medium.py`**
 
-Medium-bound exchange sensitivity: load pre-solve ctx pickle per scenario, then compress listed uptakes.
+Medium-bound exchange sensitivity analysis.
 
 | | Item | Notes |
 |---|---|---|
-| In | `02_context/<sample>-ctx.pickle` | pre-solve context community |
-| In | `03_medium.csv` | exchange constraints |
-| In | `04_medium_sensitivity_list.csv` | exchanges to perturb |
-| In | `<sample>-ctx-flux.csv` | same-batch formal flux; copied for `bound1000` |
-| In | `--medium-bounds`, `--sample` | scenario bounds and sample ID |
-| Out | `03_simulation/sensitivity_medium/bound<value>/<sample>-bound<value>-{bsl,ctx}-flux.csv` | one folder per bound |
+| In | `02_context/<sample>-ctx.pickle` | Context CMM |
+| In | `03_medium.csv` | Exchange constraints |
+| In | `04_medium_sensitivity_list.csv` | Exchanges to perturb |
+| In | `<sample>-ctx-flux.csv` | Formal output flux data |
+| In | `--medium-bounds` | Scenario bounds |
+| In | `--sample` | Sample ID |
+| Out | `03_simulation/sensitivity_medium/bound<value>/<sample>-bound<value>-{bsl,ctx}-flux.csv` | Output flux data, one folder per medium bound |
 
 **5. `workflow/simulation/sensitivity_tradeoff.py`**
 
-Cooperative-tradeoff fraction sensitivity. Each `(sample, mode, fraction)` job
-loads an independent community (`bsl` pickle or pre-solve `ctx` pickle) and
-solves once. `--medium-file` is optional CLI compatibility only and is unused.
+Cooperative-tradeoff fraction sensitivity analysis.
 
 | | Item | Notes |
 |---|---|---|
-| In | `01_baseline/<sample>-bsl.pickle` | baseline community (`bsl` mode) |
-| In | `02_context/<sample>-ctx.pickle` | pre-solve context community (`ctx` mode; required) |
-| In | `--tradeoffs`, `--sample` | fraction grid and sample ID |
-| Out | `03_simulation/sensitivity_tradeoff/tradeoff<value>/<sample>-tradeoff<value>-{bsl,ctx}-flux.csv` | one folder per fraction |
+| In | `01_baseline/<sample>-bsl.pickle` | Baseline CMM (`bsl` mode) |
+| In | `02_context/<sample>-ctx.pickle` | Context CMM (`ctx` mode) |
+| In | `--tradeoffs` | Fraction grid |
+| In | `--sample` | Sample ID |
+| Out | `03_simulation/sensitivity_tradeoff/tradeoff<value>/<sample>-tradeoff<value>-{bsl,ctx}-flux.csv` | Output flux data, one folder per tradeoff fraction |
 
 **6. `workflow/simulation/sensitivity_reaction.py`**
 
-RIPTiDe-bound Latin Hypercube Sampling (LHS) reaction-constraint sensitivity (one solve per realization from a fresh pre-solve ctx load).
+Reaction bound Latin Hypercube Sampling (LHS) reaction-constraint sensitivity analysis.
 
 | | Item | Notes |
 |---|---|---|
-| In | `02_context/<sample>-ctx.pickle` | pre-solve context community |
-| In | `02_context/context_bounds.csv` | interval source |
-| In | `04_reaction_sensitivity_list.csv` | reaction families to perturb |
-| In | `--reaction-realizations`, `--sample` | LHS realization count and sample ID |
-| Out | `03_simulation/sensitivity_reaction/01_lhs/<sample>/LHS_sample_S*.csv` | generated LHS interval tables |
-| Out | `03_simulation/sensitivity_reaction/S*/<sample>-reaction-S*-ctx-flux.csv` | one folder per realization |
+| In | `02_context/<sample>-ctx.pickle` | Context CMM |
+| In | `02_context/context_bounds.csv` | Reaction bounds |
+| In | `04_reaction_sensitivity_list.csv` | Reaction families to perturb |
+| In | `--reaction-realizations` | LHS realization count |
+| In | `--sample` | Sample ID |
+| Out | `03_simulation/sensitivity_reaction/01_lhs/<sample>/LHS_sample_S*.csv` | Generated LHS intervals |
+| Out | `03_simulation/sensitivity_reaction/S*/<sample>-reaction-S*-ctx-flux.csv` | Output flux data, one folder per realization |
 
 **7. `workflow/analysis/metrics_eai.py`**
 
-Elemental Allocation Index (EAI) and radar plots.
+Calculate and visualize the Elemental Allocation Index (EAI).
 
 | | Item | Notes |
 |---|---|---|
-| In | `03_simulation/context/` | `--single-dir`; formal fluxes |
-| In | `03_simulation/sensitivity_*/` | `--batch-dir`; optional sensitivity batches |
-| In | `--sample` | sample ID |
-| Out | `04_analysis/eai/<dataset>/…` | CSVs and PDFs |
+| In | `03_simulation/context/` | `--single-dir`; Formal output flux data |
+| In | `03_simulation/sensitivity_*/` | `--batch-dir`; Optional sensitivity batches |
+| In | `--sample` | Sample ID |
+| Out | `04_analysis/eai/` | EAI raw data and figure outputs |
 
 **8. `workflow/analysis/metrics_arb.py`**
 
-Anabolic Reallocation Bias (ARB) and bar plots.
+Calculate and visualize the Anabolic Reallocation Bias (ARB).
 
 | | Item | Notes |
 |---|---|---|
 | In | flux directories | `--single-dir` / `--batch-dir` |
 | In | `01_taxon_ge.csv` | `--ge-file` |
-| In | `--sample` | sample ID |
-| Out | `04_analysis/arb/<dataset>/…` | CSVs and PDFs |
+| In | `--sample` | Sample ID |
+| Out | `04_analysis/arb/` | ARB raw data and figure outputs |
 
 **9. `workflow/analysis/metrics_ac.py`**
 
-Association Coefficient (AC), guild networks, and co-consumption / cross-feeding heatmaps.
+Calculate and visualize Association Coefficient (AC).
 
 | | Item | Notes |
 |---|---|---|
 | In | flux directories | `--single-dir` / `--batch-dir` |
 | In | `02_context/<sample>-ctx.pickle` | `--context-cmm-dir` |
-| In | `01_taxon_ge.csv`, `04_taxon_guild.csv` | scaling and guild map |
-| In | `--sample` | sample ID |
-| Out | `04_analysis/ac/<dataset>/…` | CSVs and PDFs |
-| Out | `*-ctx-interactions.{metacontext,micom}.csv` | interaction cache beside flux tables |
+| In | `01_taxon_ge.csv`, `04_taxon_guild.csv` | Scaling and guild map |
+| In | `--sample` | Sample ID |
+| Out | `04_analysis/ac/` | AC raw data and figure outputs |
+| Out | `*-ctx-interactions.{metacontext,micom}.csv` | Interaction cache beside flux tables |
 
 ## License
 
