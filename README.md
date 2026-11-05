@@ -75,7 +75,7 @@ Three-MAG community (`example/inputs`) for a quick workstation run:
 ```bash
 python pipeline/run_example.py
 ```
-Output layout (under `{example|case_study}/outputs/`; shared by both launchers):
+Output layout under `example/outputs/`:
 
 | Stage | Item | Notes |
 |---|---|---|
@@ -125,7 +125,7 @@ The flags below apply to both `run_example.py` and `run_case_study.py`.
 
 ## Run Individual Modules
 
-Every module is also a standalone CLI under `workflow/`; you can run modules individually or assemble your own pipeline. Run all commands from the repo root. In the **In** / **Out** tables below, bare filenames and stage folders are shorthands for `{example|case_study}/inputs/…` and `{example|case_study}/outputs/…`, respectively. For flags, defaults, and command-line examples, run `python <script> --help` on any module or pipeline launcher.
+Every module under `workflow/` is a standalone command-line program. Run one module on its own, or call several in sequence and assemble your own pipeline. Run all commands from the repository root. The **In** / **Out** tables below list the files each module needs for a quick start. A bare filename or stage folder is shorthand for the same path under `{example|case_study}/inputs/…` or `{example|case_study}/outputs/…`. For the full set of flags and their defaults, run `python <script> --help`.
 
 **1. `workflow/simulation/build_community_model.py`**
 
@@ -173,11 +173,12 @@ Medium-bound exchange sensitivity analysis.
 
 | | Item | Notes |
 |---|---|---|
+| In | `--baseline-cmm-dir` | Directory with `<sample>-bsl.pickle` |
 | In | `02_context/<sample>-ctx.pickle` | Context CMM |
 | In | `03_medium.csv` | Exchange constraints |
 | In | `04_medium_sensitivity_list.csv` | Exchanges to perturb |
 | In | `<sample>-ctx-flux.csv` | Formal output flux data |
-| In | `--medium-bounds` | Scenario bounds |
+| In | `--bounds` | Scenario bounds |
 | In | `--sample` | Sample ID |
 | Out | `03_simulation/sensitivity_medium/bound<value>/<sample>-bound<value>-{bsl,ctx}-flux.csv` | Output flux data, one folder per medium bound |
 
@@ -202,7 +203,7 @@ Reaction bound Latin Hypercube Sampling (LHS) reaction-constraint sensitivity an
 | In | `02_context/<sample>-ctx.pickle` | Context CMM |
 | In | `02_context/context_bounds.csv` | Reaction bounds |
 | In | `04_reaction_sensitivity_list.csv` | Reaction families to perturb |
-| In | `--reaction-realizations` | LHS realization count |
+| In | `--n-realizations` | LHS realization count |
 | In | `--sample` | Sample ID |
 | Out | `03_simulation/sensitivity_reaction/01_lhs/<sample>/LHS_sample_S*.csv` | Generated LHS intervals |
 | Out | `03_simulation/sensitivity_reaction/S*/<sample>-reaction-S*-ctx-flux.csv` | Output flux data, one folder per realization |
