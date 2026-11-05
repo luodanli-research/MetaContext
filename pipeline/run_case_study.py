@@ -2,12 +2,11 @@
 """Case-study pipeline for the published tradeoff1 and tradeoff0.5 layouts.
 
 Points at ``case_study/outputs/tradeoff1`` or ``tradeoff0.5``. Both trees
-reuse the pre-solve context models. Medium fluxes are the phosphate-and-iron
-list and are plotted from the existing directory; this script does not solve
-medium again. Tradeoff sensitivity and reaction reuse files already in the
-selected tree. ``tradeoff0.5`` links its tradeoff sweep to ``tradeoff1``.
-Medium and reaction solves use ``--solve-tradeoff``. Reaction EAI pairs each
-ctx flux with the baseline solved at that same fraction.
+reuse the pre-solve context models. Sensitivity stages reuse files already in
+the selected tree. ``tradeoff0.5`` links its tradeoff sweep to ``tradeoff1``.
+Medium and reaction solves use ``--solve-tradeoff``. Reaction EAI reads
+``00_solve_tradeoff.txt`` and pairs each ctx flux with the baseline solved at
+that same fraction.
 
 Examples::
 
@@ -27,7 +26,6 @@ if str(PIPELINE_DIR) not in sys.path:
 from _orchestrator import main as run_pipeline
 from presets import CASE_STUDY
 
-MEDIUM_LIST = Path("case_study/inputs/04_medium_sensitivity_list.csv")
 PUBLISHED_ROOTS = {
     1.0: Path("case_study/outputs/tradeoff1"),
     0.5: Path("case_study/outputs/tradeoff0.5"),
@@ -72,13 +70,6 @@ def main() -> int:
     _ensure_flag(argv, "--output-root", [str(PUBLISHED_ROOTS[fraction])])
     root = Path(_flag_value(argv, "--output-root") or str(PUBLISHED_ROOTS[fraction]))
     _ensure_flag(argv, "--analysis-dir", [str(root / "04_analysis")])
-    _ensure_flag(argv, "--medium-reaction-list", [str(MEDIUM_LIST)])
-    _ensure_flag(argv, "--sensitivity", ["tradeoff", "reaction"])
-    _ensure_flag(
-        argv,
-        "--prior-medium-dir",
-        [str(root / "03_simulation" / "sensitivity_medium")],
-    )
     _ensure_flag(argv, "--solve-timeout", ["1800"])
     _ensure_flag(argv, "--metrics", ["eai", "arb", "ac"])
     return run_pipeline(CASE_STUDY)

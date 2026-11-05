@@ -197,15 +197,6 @@ def build_parser(preset: dict[str, Any]) -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--prior-medium-dir",
-        type=Path,
-        default=None,
-        help=(
-            "Existing sensitivity_medium directory to include in metric "
-            "plots without solving that stage."
-        ),
-    )
-    parser.add_argument(
         "--reaction-fraction",
         type=float,
         default=5.0,
@@ -765,11 +756,6 @@ def validate_configuration(args: argparse.Namespace) -> None:
         raise ValueError(
             "--prior-tradeoff-dir cannot be combined with "
             "--sensitivity tradeoff (that stage would write its own batch)."
-        )
-    if args.prior_medium_dir is not None and "medium" in args.sensitivity:
-        raise ValueError(
-            "--prior-medium-dir cannot be combined with "
-            "--sensitivity medium (that stage would write its own batch)."
         )
     if "reaction" in args.sensitivity:
         if not 0 < args.reaction_fraction < 100:
@@ -1332,18 +1318,6 @@ def pipeline(args: argparse.Namespace) -> int:
                     f"{prior_tradeoff}"
                 )
                 analysis_batch_dirs.append(prior_tradeoff)
-            if args.prior_medium_dir is not None:
-                prior_medium = as_relative(args.prior_medium_dir)
-                if not prior_medium.is_dir() and not args.check_only:
-                    raise SystemExit(
-                        "Missing --prior-medium-dir: "
-                        f"{prior_medium}"
-                    )
-                print(
-                    "[CONFIG] analysis prior medium batch: "
-                    f"{prior_medium}"
-                )
-                analysis_batch_dirs.append(prior_medium)
 
             has_batches = bool(analysis_batch_dirs)
             for metric in args.metrics:
