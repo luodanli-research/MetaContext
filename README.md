@@ -21,8 +21,14 @@ Verify the installation:
 python -c "import cobra, cplex, micom, riptide; print('OK')"
 ```
 
-CPLEX is distributed by IBM and may require a separate license if the PyPI
-package cannot be used on the target system.
+That check confirms the Python packages import. The `cplex` package installed from PyPI is the IBM Community Edition, which solves models of at most 1,000 variables and 1,000 constraints. Community models in this workflow are larger, so install a full CPLEX solver before running a simulation. Apply for the [free academic version](https://academic.ibm.com/a2mt/), or subscribe to a commercial license.
+
+After Studio is installed, activate `metacontext` and replace the Community Edition runtime with the full solver:
+
+```bash
+pip install docplex
+docplex config --upgrade /path/to/CPLEX_Studio
+```
 
 ## Workflow
 
