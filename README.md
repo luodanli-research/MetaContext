@@ -1,6 +1,6 @@
 # MetaContext-CMM
 
-**MetaContext-CMM** is a meta-omics contextualised community metabolic modelling workflow that builds context-specific community-scale metabolic models (CMMs) by integrating MAG-derived network topology, metatranscriptome-informed taxon scaling and reaction constraints, and geochemistry-based environmental constraints.
+**MetaContext-CMM** is a meta-omics contextualised community metabolic modelling workflow that builds context-specific community-scale metabolic models (CMMs) by integrating metagenome-derived network topology, metatranscriptome-informed taxonomy scaling and reaction constraints, as well as geochemistry-based environmental constraints.
 
 This repository contains the reproducible MetaContext-CMM implementation for hot-spring microbial communities. Reusable code lives under `workflow/`. The shipped `example/` tree is an example community for learning and testing.
 
@@ -38,7 +38,7 @@ docplex config --upgrade /path/to/CPLEX_Studio
 
 Each input type below has a corresponding format example under `example/inputs/`.
 
-**Genome-scale metabolic model (GEM) of MAGs:**
+**Genome-scale metabolic model (GEM) of metagenome-assembled genomes (MAGs):**
 
 ```text
 01_gems/
@@ -50,27 +50,27 @@ Each file should contain one GEM for one MAG in SBML format.
 
 **Taxon-level scaling:**
 
-`01_taxon_ge.csv`: housekeeping-gene-based RNA abundance (TPM), used for taxon scaling in baseline and context CMMs.
+`01_taxon_ge.csv`: Housekeeping-gene-based RNA abundance (TPM), used for taxon scaling in baseline and context CMMs.
 
-`01_taxon_ga.csv`: housekeeping-gene-based DNA abundance (TPM), used only for DNA–RNA concordance quality control (QC).
+`01_taxon_ga.csv`: Housekeeping-gene-based DNA abundance (TPM), used only for DNA–RNA concordance quality control (QC).
 
 **Gene expression:**
 
-`02_gene_expression.csv`: gene-level expression profiles for each MAG.
+`02_gene_expression.csv`: Gene-level expression profiles for each MAG.
 
 **Medium:**
 
-`03_medium.csv`: medium composition for exchange-reaction constraints, based on measured geochemistry or user-defined settings.
+`03_medium.csv`: Medium composition for exchange-reaction constraints, based on measured geochemistry or user-defined settings.
 
 **Sensitivity analysis:**
 
-`04_medium_sensitivity_list.csv`: medium exchange reactions included in medium-bound sensitivity analysis.
+`04_medium_sensitivity_list.csv`: Medium exchange reactions included in medium-bound sensitivity analysis.
 
-`04_reaction_sensitivity_list.csv`: reaction families included in reaction-constraint sensitivity analysis.
+`04_reaction_sensitivity_list.csv`: Reaction families included in reaction-constraint sensitivity analysis.
 
 **Community guild:**
 
-`04_taxon_guild.csv`: community guild assignment used for Association Coefficient (AC) calculation.
+`04_taxon_guild.csv`: Community guild assignment used for Association Coefficient (AC) calculation.
 
 ## Run Pipeline
 
@@ -88,9 +88,9 @@ Output layout under `example/outputs/`:
 | `01_baseline/` | `<sample>-bsl.pickle` | Baseline CMM |
 | `01_baseline/` | `<sample>-manifest.tsv` | Taxon manifest |
 | `02_context/` | `context_bounds.csv` | Reaction bounds |
-| `02_context/` | `context_species.csv` | QC eligibility taxa |
+| `02_context/` | `context_species.csv` | QC-filtered taxa |
 | `02_context/` | `context_expression.csv` | QC-filtered gene expression data |
-| `02_context/` | `context_summary.csv` | QC funnel summary |
+| `02_context/` | `context_summary.csv` | QC summary |
 | `02_context/` | `<sample>-ctx.pickle` | Context CMM |
 | `03_simulation/context/` | `<sample>-{bsl,ctx}-flux.csv` | Formal output flux data |
 | `03_simulation/sensitivity_medium/bound<value>/` | `<sample>-bound<value>-{bsl,ctx}-flux.csv` | One folder per medium bound |
@@ -113,7 +113,7 @@ python pipeline/run_case_study.py
 
 **Key options:**
 
-The flags below apply to both `run_example.py` and `run_case_study.py`.
+The flags below apply to all pipelines.
 
 | Option | Role |
 |---|---|
@@ -131,7 +131,7 @@ The flags below apply to both `run_example.py` and `run_case_study.py`.
 
 ## Run Individual Modules
 
-Every module under `workflow/` is a standalone command-line program. Run one module on its own, or call several in sequence and assemble your own pipeline. Run all commands from the repository root. The **In** / **Out** tables below list the files each module needs for a quick start. A bare filename or stage folder is shorthand for the same path under `{example|case_study}/inputs/…` or `{example|case_study}/outputs/…`. For the full set of flags and their defaults, run `python <script> --help`.
+Every module under `workflow/` is a standalone command-line program. Run one module on its own, or call several in sequence and assemble your own pipeline. Run all commands from the repository root. The **In** / **Out** tables below list the files each module needs for a quick start. For the full set of flags and their defaults, run `python <script> --help`.
 
 **1. `workflow/simulation/build_community_model.py`**
 
@@ -147,7 +147,7 @@ Build a baseline CMM from taxon scaling data.
 
 **2. `workflow/simulation/infer_context_bounds.py`**
 
-Run DNA–RNA discordance QC and infer sample-specific reaction bounds for qualified taxa.
+Run DNA–RNA discordance QC and infer sample-specific reaction bounds for QC-filtered taxa.
 
 | | Item | Notes |
 |---|---|---|
@@ -156,9 +156,9 @@ Run DNA–RNA discordance QC and infer sample-specific reaction bounds for quali
 | In | `01_taxon_ge.csv`, `01_taxon_ga.csv` | Discordance QC inputs |
 | In | `--sample` | Sample ID |
 | Out | `02_context/context_bounds.csv` | Reaction bounds |
-| Out | `02_context/context_species.csv` | QC eligibility taxa |
+| Out | `02_context/context_species.csv` | QC-filtered taxa |
 | Out | `02_context/context_expression.csv` | QC-filtered gene expression data |
-| Out | `02_context/context_summary.csv` | QC funnel summary |
+| Out | `02_context/context_summary.csv` | QC summary |
 
 **3. `workflow/simulation/simulate_community_model.py`**
 
