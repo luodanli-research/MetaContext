@@ -1,6 +1,6 @@
-# MetaContext-CMM
+# MetaContext
 
-**MetaContext-CMM** is a meta-omics contextualised community metabolic modelling workflow that builds context-specific community-scale metabolic models (CMMs) by integrating metagenome-derived network topology, metatranscriptome-informed taxonomy scaling and reaction constraints, as well as geochemistry-based environmental constraints.
+**MetaContext** is a meta-omics contextualised community metabolic modelling workflow that builds context-specific community-scale metabolic models (CMMs) by integrating metagenome-derived network topology, metatranscriptome-informed taxonomy scaling and reaction constraints, as well as geochemistry-based environmental constraints.
 
 This repository contains the reproducible MetaContext-CMM implementation for hot-spring microbial communities. Reusable code lives under `workflow/`. The shipped `example/` tree is an example community for learning and testing.
 
